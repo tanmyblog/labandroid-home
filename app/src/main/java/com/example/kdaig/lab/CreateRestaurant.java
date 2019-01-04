@@ -1,21 +1,27 @@
 package com.example.kdaig.lab;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Toast;
 
 import com.example.kdaig.lab.dao.RestaurantDAO;
+import com.example.kdaig.lab.dao.RestaurantServiceDAO;
 import com.example.kdaig.lab.model.ClassRestaurant;
 
 public class CreateRestaurant extends AppCompatActivity {
 
-    private RestaurantDAO restaurantDAO;
+    private RestaurantServiceDAO restaurantServiceDAO;
+    ProgressDialog prgDialog;
     private boolean needRefresh = false;
 
     private EditText edtId;
@@ -24,6 +30,55 @@ public class CreateRestaurant extends AppCompatActivity {
 
     private Button btnCancel;
     private Button btnAdd;
+
+    // thêm mới nhà hàng
+    public void asyncCreate(final ClassRestaurant classRestaurant) {
+        //AsyncTask
+        AsyncTask task = new AsyncTask() {
+            // khoi ddoong xu ly
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                prgDialog.show();
+            }
+
+            //khai bao cv chinh can xu ly
+            protected Object doInBackground(Object[] objects) {
+                try {
+                    restaurantServiceDAO.create(classRestaurant);
+                    return true;
+                } catch (Exception ex) {
+                    Log.e("Creatting", "Error:" + ex.toString());
+                    return false;
+                }
+            }
+
+            //cap nhat tac vu khac trong khitien trinh cinh xy ly
+            @Override
+            protected void onProgressUpdate(Object[] values) {
+                super.onProgressUpdate(values);
+            }
+
+            //tien trinh cinh xy ly hoan thanh
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+                prgDialog.dismiss();
+                boolean result = (boolean) o;
+                if (result == true) {
+                    CreateRestaurant.this.needRefresh = true;
+
+                    //hien thi thong diep
+                    String messgae = "Create restaurant " + classRestaurant.getId() + "successfully";
+                    Toast.makeText(CreateRestaurant.this, messgae, Toast.LENGTH_LONG).show();
+                } else {
+                    //hien thi thong diep
+                    String messgae = "Fail! Updating class" + classRestaurant.getId();
+                    Toast.makeText(CreateRestaurant.this, messgae, Toast.LENGTH_LONG).show();
+                }
+            }
+        }.execute();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +92,12 @@ public class CreateRestaurant extends AppCompatActivity {
         btnCancel = (Button) findViewById(R.id.btnCancel);
         btnAdd = (Button) findViewById(R.id.btnAdd);
 
-        restaurantDAO = new RestaurantDAO(this);
+        restaurantServiceDAO = new RestaurantServiceDAO();
+        prgDialog = new ProgressDialog(this);
+
+        prgDialog.setMessage("Please wait...");
+
+        prgDialog.setCancelable(false);
     }
 
     public void cancel(View v){
@@ -65,7 +125,7 @@ public class CreateRestaurant extends AppCompatActivity {
                 break;
         }
 
-        restaurantDAO.create(r);
+        asyncCreate(r);
         this.needRefresh = true;
 
         // tro ve mainActivity

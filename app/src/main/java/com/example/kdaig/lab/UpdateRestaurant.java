@@ -1,7 +1,9 @@
 package com.example.kdaig.lab;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,12 +16,16 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.example.kdaig.lab.dao.RestaurantDAO;
+import com.example.kdaig.lab.dao.RestaurantServiceDAO;
 import com.example.kdaig.lab.model.ClassRestaurant;
 
 public class UpdateRestaurant extends AppCompatActivity {
 
-    private RestaurantDAO restaurantDAO;
     private boolean needRefresh = false;
+    //khai bao DAO service ddeer thuc hien cac chuwsc nag CRUD
+    private RestaurantServiceDAO restaurantServiceDAO;
+    //progress dialog object
+    ProgressDialog prgDialog;
 
     private EditText edtId;
     private EditText edtName;
@@ -31,6 +37,55 @@ public class UpdateRestaurant extends AppCompatActivity {
 
     private Button btnCancel;
     private Button btnAdd;
+
+    //cap nhat lop hc bat dong bo tu server
+    public void asyncUpdate(final ClassRestaurant classRestaurant){
+        //AsyncTask
+        AsyncTask task = new AsyncTask() {
+            // khoi ddoong xu ly
+            @Override
+            protected  void onPreExecute(){
+                super.onPreExecute();
+                prgDialog.show();
+            }
+
+            //khai bao cv chinh can xu ly
+            protected Object doInBackground(Object[] objects) {
+                try {
+                    restaurantServiceDAO.update(classRestaurant);
+                    return true;
+                }
+                catch (Exception ex){
+                    return false;
+                }
+            }
+            //cap nhat tac vu khac trong khitien trinh cinh xy ly
+            @Override
+            protected void onProgressUpdate(Object[] values){
+                super.onProgressUpdate(values);
+            }
+            //tien trinh cinh xy ly hoan thanh
+            @Override
+            protected  void onPostExecute(Object o){
+                super.onPostExecute(o);
+                prgDialog.dismiss();
+                boolean res= (boolean)o;
+                if(res ==true){
+                    UpdateRestaurant.this.needRefresh = true;
+
+                    //hien thi thong diep
+                    String messgae = "Updating restaurant "+classRestaurant.getId()+" successfully";
+                    Toast.makeText(UpdateRestaurant.this,messgae,Toast.LENGTH_LONG).show();
+                }
+                else{
+                    //hien thi thong diep
+                    String messgae = "Fail! Updating restaurant "+classRestaurant.getId();
+                    Toast.makeText(UpdateRestaurant.this,messgae,Toast.LENGTH_LONG).show();
+                }
+            }
+
+        }.execute();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +106,13 @@ public class UpdateRestaurant extends AppCompatActivity {
         btnCancel = (Button) findViewById(R.id.btnCancel);
         btnAdd = (Button) findViewById(R.id.btnAdd);
 
-        restaurantDAO = new RestaurantDAO(this);
+        //Khởi tạo đối tượng DAO
+        restaurantServiceDAO = new RestaurantServiceDAO();
+
+        prgDialog = new ProgressDialog(this);
+        prgDialog.setMessage("Please wait...");
+        prgDialog.setCancelable(false);
+
         // Nhận dữ liệu từ intent được gửi qua từ MainActivity khi thao tác chức năng Update
         Intent intent = this.getIntent();
         ClassRestaurant classRestaurant = (ClassRestaurant) intent.getSerializableExtra("classRestaurant");
@@ -111,7 +172,7 @@ public class UpdateRestaurant extends AppCompatActivity {
                 break;
         }
 
-        restaurantDAO.update(r);
+        asyncUpdate(r);
         this.needRefresh = true;
         // trở lại MainActivity
         this.onBackPressed();

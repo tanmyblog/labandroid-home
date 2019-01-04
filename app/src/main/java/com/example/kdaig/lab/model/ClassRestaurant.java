@@ -3,7 +3,7 @@ package com.example.kdaig.lab.model;
 import java.io.Serializable;
 
 public class ClassRestaurant implements Serializable {
-    private String id, name, address, type="";
+    private String id, name, address, type;
 
     public String getId() {
         return id;
