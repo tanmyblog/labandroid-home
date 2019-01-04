@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Lab</string>
+    <string name="title">MY APP</string>
+    <string name="title_create">Create</string>
+    <string name="title_update">Update</string>
+
+</resources>
